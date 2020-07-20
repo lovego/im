@@ -1,37 +1,93 @@
 package im
 
-import "time"
+import (
+	"time"
+
+	"github.com/garyburd/redigo/redis"
+	"github.com/lovego/errs"
+)
 
 type pullRequest struct {
-	ch chan map[string]string
-	//          business version
-	versions map[string]string
+	versions map[string]string // business => version
+	ch       chan map[string]string
 }
 
 func (im *IM) Pull(
 	system, user string, versions map[string]string, timeout time.Duration,
 ) (map[string]string, error) {
+	if len(versions) == 0 {
+		return nil, nil
+	}
 
-	return nil
+	req := &pullRequest{versions: versions, ch: make(chan map[string]string, 1)}
+
+	// register the req before load versions from redis, to avoid published message loss.
+	im.registerPullRequest(system, user, req)
+	defer im.unregisterPullRequest(system, user, req)
+
+	if newVersions, err := im.loadFromRedis(system, user, versions); err != nil {
+		return nil, err
+	} else if len(newVersions) > 0 {
+		return newVersions, nil
+	}
+
+	select {
+	case newVersions := <-req.ch:
+		return newVersions, nil
+	case <-time.After(timeout):
+		return map[string]string{}, nil
+	}
 }
 
-func (im *IM) feedPullRequests(msg message) {
-	im.RLock()
-	defer im.RUnlock()
+func (im *IM) registerPullRequest(system, user string, req *pullRequest) {
+	im.mtx.Lock()
+	defer im.mtx.Unlock()
 
-	usersRequests := im.pullRequests[msg.System]
-	if len(usersRequests) == 0 {
+	systemReqs, ok := im.pullRequests[system]
+	if !ok {
+		systemReqs = make(map[string][]*pullRequest)
+		im.pullRequests[system] = systemReqs
+	}
+	systemReqs[user] = append(systemReqs[user], req)
+}
+
+func (im *IM) unregisterPullRequest(system, user string, req *pullRequest) {
+	im.mtx.Lock()
+	defer im.mtx.Unlock()
+
+	systemReqs := im.pullRequests[system]
+	if len(systemReqs) == 0 {
 		return
 	}
 
-	for _, user := range msg.Users {
-		requests := requests[usersRequests]
-		if len(requests) > 0 {
-		}
-
-		us := onlineUsers.Get(uid)
-		for _, u := range us {
-			loadVersionsFromDb(u, []string{notification.Service}, false)
+	userReqs := systemReqs[user]
+	for i, thisReq := range userReqs {
+		if thisReq == req {
+			systemReqs[user] = append(userReqs[:i], userReqs[i+1:]...)
 		}
 	}
+}
+
+func (im *IM) loadFromRedis(
+	system, user string, versions map[string]string,
+) (map[string]string, error) {
+	conn := im.redisPool.Get()
+	defer conn.Close()
+
+	var businesses []string
+	for _, business := range versions {
+		businesses = append(businesses, business)
+	}
+	versionSlice, err := redis.Strings(conn.Do("HMGET", system+"/"+user, businesses))
+	if err != nil {
+		return nil, errs.Trace(err)
+	}
+
+	newVersions := make(map[string]string)
+	for i, business := range businesses {
+		if versions[business] != versionSlice[i] {
+			newVersions[business] = versionSlice[i]
+		}
+	}
+	return newVersions, nil
 }

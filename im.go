@@ -11,23 +11,23 @@ import (
 )
 
 type IM struct {
-	redisUrl string
-	channel  string
+	redisUrl     string
+	redisChannel string
+	redisPool    *redis.Pool
 
-	poolForPublish *redis.Pool
-	//               system     user
-	pullRequests map[string]map[string][]pullRequest
-	sync.RWMutex
+	//               system =>  user
+	pullRequests map[string]map[string][]*pullRequest
+	mtx          sync.RWMutex
 }
 
-func New(redisUrl, channel string, poolForPublish *redis.Pool, log *logger.Logger) *IM {
+func New(redisUrl, redisChannel string, redisPool *redis.Pool, log *logger.Logger) *IM {
 	im := &IM{
-		redisUrl:       redisUrl,
-		channel:        channel,
-		poolForPublish: poolForPublish,
-		pullRequests:   make(map[string]map[string][]pullRequest),
+		redisUrl:     redisUrl,
+		redisChannel: redisChannel,
+		redisPool:    redisPool,
+		pullRequests: make(map[string]map[string][]*pullRequest),
 	}
-	im.setupPoolForPublish()
+	im.setupRedisPool()
 
 	go im.loop(log)
 	return im
@@ -60,4 +60,63 @@ func (im *IM) loop(log *logger.Logger) {
 			}
 		}
 	}
+}
+
+func (im *IM) feedPullRequests(msg message) {
+	im.mtx.RLock()
+	defer im.mtx.RUnlock()
+
+	systemReqs := im.pullRequests[msg.System]
+	if len(systemReqs) == 0 {
+		return
+	}
+	for user, msgVersion := range msg.UsersVersion {
+		for _, req := range systemReqs[user] {
+			if reqVersion, ok := req.versions[msg.Business]; ok && reqVersion != msgVersion {
+				select {
+				case req.ch <- map[string]string{msg.Business: msgVersion}:
+				default:
+				}
+			}
+		}
+	}
+}
+
+func (im *IM) getSubscribeConn() (*redis.PubSubConn, error) {
+	c, err := redis.DialURL(
+		im.redisUrl,
+		redis.DialConnectTimeout(3*time.Second),
+		redis.DialWriteTimeout(3*time.Second),
+	)
+	if err != nil {
+		return nil, errs.Trace(err)
+	}
+
+	psc := redis.PubSubConn{Conn: c}
+	err = psc.Subscribe(im.redisChannel)
+	if err != nil {
+		psc.Close()
+		return nil, errs.Trace(err)
+	}
+	return &psc, nil
+}
+
+func (im *IM) setupRedisPool() {
+	if im.redisPool != nil {
+		return
+	}
+	im.redisPool = &redis.Pool{
+		Dial: func() (redis.Conn, error) {
+			return redis.DialURL(
+				im.redisUrl,
+				redis.DialConnectTimeout(3*time.Second),
+				redis.DialReadTimeout(3*time.Second),
+				redis.DialWriteTimeout(3*time.Second),
+			)
+		},
+		MaxIdle:     32,
+		MaxActive:   128,
+		IdleTimeout: 600 * time.Second,
+	}
+
 }
