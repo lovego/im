@@ -1,4 +1,4 @@
-# jsondoc
+# im
 Package im implement instant messages by long pull.
 Multiple node is supported by redis publish/subscribe mechanism.
 
