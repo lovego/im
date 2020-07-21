@@ -74,19 +74,21 @@ func (im *IM) loadFromRedis(
 	conn := im.redisPool.Get()
 	defer conn.Close()
 
-	var businesses []string
-	for _, business := range versions {
-		businesses = append(businesses, business)
+	args := []interface{}{system + "/" + user}
+	for business := range versions {
+		args = append(args, business)
 	}
-	versionSlice, err := redis.Strings(conn.Do("HMGET", system+"/"+user, businesses))
+
+	versionSlice, err := redis.Strings(conn.Do("HMGET", args...))
 	if err != nil {
 		return nil, errs.Trace(err)
 	}
 
 	newVersions := make(map[string]string)
-	for i, business := range businesses {
-		if versions[business] != versionSlice[i] {
-			newVersions[business] = versionSlice[i]
+	for i, version := range versionSlice {
+		business := args[i+1].(string)
+		if version != versions[business] {
+			newVersions[business] = version
 		}
 	}
 	return newVersions, nil
