@@ -1,7 +1,6 @@
 .*.swp
 *.test
-.DS_Store
 tmp
-/xiaomei/xiaomei
 !.gitkeep
 .idea/
+.DS_Store
