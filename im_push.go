@@ -15,6 +15,20 @@ type message struct {
 }
 
 func (im *IM) Push(system string, users []string, business string) error {
+	if len(im.systems) > 0 {
+		if _, ok := im.systems[system]; !ok {
+			return errs.New("args-err", "invalid system: "+system)
+		}
+	}
+	if len(im.businesses) > 0 {
+		if _, ok := im.businesses[business]; !ok {
+			return errs.New("args-err", "invalid business: "+business)
+		}
+	}
+	return im.push(system, users, business)
+}
+
+func (im *IM) push(system string, users []string, business string) error {
 	if len(users) == 0 {
 		return nil
 	}

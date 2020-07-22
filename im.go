@@ -18,6 +18,8 @@ type IM struct {
 	//               system =>  user
 	pullRequests map[string]map[string][]*pullRequest
 	mtx          sync.RWMutex
+
+	systems, businesses map[string]struct{}
 }
 
 func New(redisUrl, redisChannel string, redisPool *redis.Pool, log *logger.Logger) *IM {
@@ -26,6 +28,8 @@ func New(redisUrl, redisChannel string, redisPool *redis.Pool, log *logger.Logge
 		redisChannel: redisChannel,
 		redisPool:    redisPool,
 		pullRequests: make(map[string]map[string][]*pullRequest),
+		systems:      make(map[string]struct{}),
+		businesses:   make(map[string]struct{}),
 	}
 	im.setupRedisPool()
 
@@ -119,4 +123,16 @@ func (im *IM) setupRedisPool() {
 		IdleTimeout: 600 * time.Second,
 	}
 
+}
+
+func (im *IM) RegisterSystems(values ...string) {
+	for _, v := range values {
+		im.systems[v] = struct{}{}
+	}
+}
+
+func (im *IM) RegisterBusinesses(values ...string) {
+	for _, v := range values {
+		im.businesses[v] = struct{}{}
+	}
 }
