@@ -18,7 +18,7 @@ func ExampleIm() {
 		log.Fatal(err)
 	}
 
-	go testPull(im)
+	go testPull(im, "")
 
 	time.Sleep(time.Millisecond)
 	if err := im.Push("system", []string{"user"}, "notify"); err != nil {
@@ -26,16 +26,20 @@ func ExampleIm() {
 	}
 
 	time.Sleep(time.Millisecond)
-	testPull(im)
+	testPull(im, "")
+	testPull(im, "0")
+	testPull(im, "1")
 
 	// Output:
 	// map[notify:1]
 	// map[notify:1]
+	// map[notify:1]
+	// map[]
 }
 
-func testPull(im *IM) {
+func testPull(im *IM, version string) {
 	versions, err := im.Pull("system", "user", map[string]string{
-		"notify": "", "chats": "",
+		"notify": version, "chats": "",
 	}, 10*time.Millisecond)
 
 	if err != nil {
