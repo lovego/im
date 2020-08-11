@@ -106,9 +106,11 @@ func (im *IM) loadFromRedis(
 
 	newVersions := make(map[string]string)
 	for i, version := range versionSlice {
-		business := args[i+1].(string)
-		if version != versions[business] {
-			newVersions[business] = version
+		if version != "" {
+			business := args[i+1].(string)
+			if version != versions[business] {
+				newVersions[business] = version
+			}
 		}
 	}
 	return newVersions, nil
