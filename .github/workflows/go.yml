@@ -51,10 +51,7 @@ jobs:
       run: go build -v ./...
 
     - name: Test
-      run: |
-        sudo systemctl start postgresql
-        sudo -u postgres psql -c "alter user postgres password 'postgres'"
-        go test -v -coverprofile=profile.cov ./...
+      run: go test -v -coverprofile=profile.cov ./...
 
     - name: Send coverage
       uses: shogo82148/actions-goveralls@v1
