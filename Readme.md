@@ -1,8 +1,9 @@
 # im
-Package im implement instant messages by long pull.
+Package im implement instant messages by long poll.
 Multiple node is supported by redis publish/subscribe mechanism.
 
-[![GoDoc](https://godoc.org/github.com/lovego/im?status.svg)](https://godoc.org/github.com/lovego/im)
+[![Go Report Card](https://goreportcard.com/badge/github.com/lovego/im)](https://goreportcard.com/report/github.com/lovego/im)
+[![Documentation](https://pkg.go.dev/badge/github.com/lovego/im)](https://pkg.go.dev/github.com/lovego/im@v0.0.1)
 
 ```go
 var im = New("redis://@localhost/0", "im", nil, logger.New(os.Stderr))

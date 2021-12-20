@@ -10,7 +10,7 @@ import (
 )
 
 func ExampleIm() {
-	im := New("redis://@localhost/0", "im", nil, logger.New(os.Stderr))
+	im := New("redis://@localhost:6379/0", "im", nil, logger.New(os.Stderr))
 
 	conn := im.redisPool.Get()
 	defer conn.Close()

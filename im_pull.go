@@ -1,6 +1,9 @@
 package im
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -51,10 +54,15 @@ func (im *IM) pull(
 		return newVersions, nil
 	}
 
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+
 	select {
 	case newVersions := <-req.ch:
 		return newVersions, nil
 	case <-time.After(timeout):
+		return map[string]string{}, nil
+	case <-sig: // don't wait anymore when process terminates
 		return map[string]string{}, nil
 	}
 }

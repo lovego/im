@@ -1,0 +1,9 @@
+github.com/garyburd/redigo v1.6.3 h1:HCeeRluvAgMusMomi1+6Y5dmFOdYV/JzoRrrbFlkGIc=
+github.com/garyburd/redigo v1.6.3/go.mod h1:rTb6epsqigu3kYKBnaF028A7Tf/Aw5s0cqA47doKKqw=
+github.com/lovego/errs v0.0.5/go.mod h1:ghGAxm7RQySjaQ7+H0qWei20i/KcIGsyD4XZnj4tK/0=
+github.com/lovego/errs v0.0.7 h1:FxEqYLI2H7z1tUGqLCvuIqatKNi1eJqVHdLwx7A2NFc=
+github.com/lovego/errs v0.0.7/go.mod h1:ghGAxm7RQySjaQ7+H0qWei20i/KcIGsyD4XZnj4tK/0=
+github.com/lovego/logger v0.0.3 h1:7rvMnfx/LPBAc1WkV70KO0hotz5m6u62aSUSrZ/HMb4=
+github.com/lovego/logger v0.0.3/go.mod h1:kAUy2TeoUGs/1TtH7GKcYUD7JG9ZD10fWZNmhAwYNKo=
+github.com/lovego/tracer v0.0.1 h1:NAggoG9bu9JrgSFOUPmZBmshmT7myOFAIy1zWeNNt9o=
+github.com/lovego/tracer v0.0.1/go.mod h1:cqfr/BqdkspXnph/SO8AOt58d+ziUGEzzM3OXMtI0rc=
